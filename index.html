@@ -15,15 +15,19 @@ body {
   stroke: #000;
   shape-rendering: crispEdges;
 }
+.bar{
+    fill:dodgerblue;
+}
+
 
 </style>
 
-<script src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js"></script>
-<script src="http://raw.githubusercontent.com/eligrey/FileSaver.js/master/FileSaver.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+<!-- <script src="http://raw.githubusercontent.com/eligrey/FileSaver.js/master/FileSaver.min.js"></script>
 <!-- canvg -->
-<script type="text/javascript" src="http://gabelerner.github.io/canvg/rgbcolor.js"></script> 
+<!-- <script type="text/javascript" src="http://gabelerner.github.io/canvg/rgbcolor.js"></script> 
 <script type="text/javascript" src="http://gabelerner.github.io/canvg/StackBlur.js"></script>
-<script type="text/javascript" src="http://gabelerner.github.io/canvg/canvg.js"></script>
+<script type="text/javascript" src="http://gabelerner.github.io/canvg/canvg.js"></script> -->
 </head>
 
 <body>
@@ -58,7 +62,7 @@ function savePNG()
 
 var margin = {top: 50, right: 20, bottom: 10, left: 65},
     width = 800 - margin.left - margin.right,
-    height = 600 - margin.top - margin.bottom;
+    height = 400 - margin.top - margin.bottom;
 
 var y = d3.scale.ordinal()
     .rangeRoundBands([0, height], .3);
@@ -81,35 +85,38 @@ var svg = d3.select("#figure").append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
     .attr("id", "d3-plot")
-  .append("g")
+    .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-  color.domain(["Strongly disagree", "Disagree", "Neither agree nor disagree", "Agree", "Strongly agree"]);
+ 
 
-  d3.csv("raw_data.csv", function(error, data) {
+   color.domain(["Strongly disagree", "Disagree", "Neither agree nor disagree", "Agree", "Strongly agree"]);
+
+   d3.csv("raw_data.seg.csv", function(error, data) {
 
   data.forEach(function(d) {
     // calc percentages
-    d["Strongly disagree"] = +d[1]*100/d.N;
-    d["Disagree"] = +d[2]*100/d.N;
-    d["Neither agree nor disagree"] = +d[3]*100/d.N;
-    d["Agree"] = +d[4]*100/d.N;
-    d["Strongly agree"] = +d[5]*100/d.N;
-    var x0 = -1*(d["Neither agree nor disagree"]/2+d["Disagree"]+d["Strongly disagree"]);
-    var idx = 0;
-    d.boxes = color.domain().map(function(name) { return {name: name, x0: x0, x1: x0 += +d[name], N: +d.N, n: +d[idx += 1]}; });
+    // d["Strongly disagree"] = +d[1]*100/d.N;
+    // d["Disagree"] = +d[2]*100/d.N;
+    // d["Neither agree nor disagree"] = +d[3]*100/d.N;
+    // d["Agree"] = +d[4]*100/d.N;
+    // d["Strongly agree"] = +d[5]*100/d.N;
+    // var x0 = -1*(d["Neither agree nor disagree"]/2+d["Disagree"]+d["Strongly disagree"]);
+    // var idx = 0;
+    // d.boxes = color.domain().map(function(name) { return {name: name, x0: x0, x1: x0 += +d[name], N: +d.N, n: +d[idx += 1]}; });
+    
   });
 
   var min_val = d3.min(data, function(d) {
-          return d.boxes["0"].x0;
+          return 1 //TODO;
           });
 
   var max_val = d3.max(data, function(d) {
-          return d.boxes["4"].x1;
+          return 10 //TODO;
           });
 
   x.domain([min_val, max_val]).nice();
-  y.domain(data.map(function(d) { return d.Question; }));
+  y.domain(data.map(function(d) { return d.Segment; }));
 
   svg.append("g")
       .attr("class", "x axis")
@@ -119,38 +126,50 @@ var svg = d3.select("#figure").append("svg")
       .attr("class", "y axis")
       .call(yAxis)
 
-  var vakken = svg.selectAll(".question")
+  
+
+  var vakken = svg.selectAll(".segment")
       .data(data)
     .enter().append("g")
       .attr("class", "bar")
-      .attr("transform", function(d) { return "translate(0," + y(d.Question) + ")"; });
+      .attr("transform", function(d) { return "translate(0," + y(d.Segment) + ")"; });
+      //.style("fill","#000");
 
   var bars = vakken.selectAll("rect")
-      .data(function(d) { return d.boxes; })
+      .data(function(d) { 
+          return d; })
     .enter().append("g").attr("class", "subbar");
 
   bars.append("rect")
       .attr("height", y.rangeBand())
       .attr("x", function(d) { return x(d.x0); })
       .attr("width", function(d) { return x(d.x1) - x(d.x0); })
-      .style("fill", function(d) { return color(d.name); });
+      //.style("fill", "none");
 
   bars.append("text")
-      .attr("x", function(d) { return x(d.x0); })
+      .attr("x", function(d) { return x(d.From); })
       .attr("y", y.rangeBand()/2)
       .attr("dy", "0.5em")
       .attr("dx", "0.5em")
       .style("font" ,"10px sans-serif")
       .style("text-anchor", "begin")
-      .text(function(d) { return d.n !== 0 && (d.x1-d.x0)>3 ? d.n : "" });
+      .text(function(d) { return d.Segment });
 
-  vakken.insert("rect",":first-child")
+  vakken.insert("rect")
       .attr("height", y.rangeBand())
-      .attr("x", "1")
-      .attr("width", width)
-      .attr("fill-opacity", "0.5")
-      .style("fill", "#F5F5F5")
-      .attr("class", function(d,index) { return index%2==0 ? "even" : "uneven"; });
+      .attr("x", function(d){return x(d.From);})
+      .attr("width", function(d){return x(d.To)-x(d.From);})
+      //.attr("fill-opacity", "0.5")
+      //.style("fill", "#ccc")
+      //(.attr("class", function(d,index) { return index%2==0 ? "even" : "uneven"; })
+      .append("text")
+      .attr("x", function(d) { return x(0); })
+      .attr("y", y.rangeBand()/2)
+      .attr("dy", "0.5em")
+      .attr("dx", "0.5em")
+      .style("font" ,"10px sans-serif")
+      .style("text-anchor", "begin")
+      .text(function(d) { return d.Segment });
 
   svg.append("g")
       .attr("class", "y axis")
@@ -198,8 +217,8 @@ var svg = d3.select("#figure").append("svg")
   // print the svg in a canvas
   var element = document.getElementById('d3-plot');
   var svgAsString = new XMLSerializer().serializeToString(element);
-  canvg(document.getElementById('mycanvas'), svgAsString );
-});
+  //canvg(document.getElementById('mycanvas'), svgAsString ); -->
+ });
 </script>
 
 </body>
